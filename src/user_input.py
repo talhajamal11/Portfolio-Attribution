@@ -21,7 +21,7 @@ def get_tickers() -> str:
             print(e)
 
 def get_portfolio_allocation() -> int:
-    """ Request user for integer amount to allocate to portfolio
+    """ Request user for integer dollar amount to allocate to portfolio
 
     Returns:
         int: Portfolio Starting Networth
