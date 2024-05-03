@@ -5,10 +5,10 @@ from pull_data import pull_stock_data
 from pull_data import one_stock_data
 
 def main():
-    print("------- Getting Tickers from User --------")
+    """
+    Main Function for Portfolio Attribution Project
+    """
     ticks = get_tickers()
-    print("------- Downloading Stock Data --------")
-    #stocks = ["TSLA", "MSFT"]
     data = pull_stock_data(tickers=ticks,
                            start="2016-01-01",
                            end="2024-01-01")

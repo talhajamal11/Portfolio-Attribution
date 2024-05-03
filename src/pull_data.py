@@ -14,6 +14,7 @@ def pull_stock_data(tickers:list, start:str, end:str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: dataframe of stock data
     """
+    print("------- Downloading Stock Data --------")
     df = yf.download(tickers=tickers, start=start, end=end)
     return df
 
