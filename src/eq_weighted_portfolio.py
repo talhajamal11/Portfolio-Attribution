@@ -1,9 +1,32 @@
 """ Create a Portfolio
 """
 import math
+from datetime import datetime, timedelta
 import pandas as pd
 
-def initialize_portfolio(df: pd.DataFrame, allocation: str, ticks: list) -> pd.DataFrame:
+def create_portfolio(price_df: pd.DataFrame, allocation: str, ticks: list) -> pd.DataFrame:
+    """ Create an Equal Weighted Portfolio
+    Args:
+
+    Returns:
+        dict: Dataframe of Portfolio
+    """
+    print("INITIALIZE PORTFOLIO")
+    portfolio = initialize_portfolio(price_df=price_df, allocation=allocation, ticks=ticks)
+    print("PORTFOLIO INITIALIZED")
+    print(portfolio)
+    # Rebalance for each date after the first one
+    for date in price_df.index.unique()[1:]:
+        print("UPDATE PORTFOLIO")
+        portfolio = update_portfolio(portfolio=portfolio.copy(),
+                                     price_df=price_df,
+                                     ticks=ticks,
+                                     date=date)
+    return portfolio
+
+def initialize_portfolio(price_df: pd.DataFrame,
+                         allocation: str,
+                         ticks: list) -> pd.DataFrame:
     """ Initialize the portfolio for the first date
 
     Args:
@@ -19,8 +42,8 @@ def initialize_portfolio(df: pd.DataFrame, allocation: str, ticks: list) -> pd.D
 
     # Populate portfolio dataframe
     portfolio_data = []
-    date = df.index[0] # First Date of Portfolio
-    data = df.loc[date] # Data for First Date
+    date = price_df.index[0] # First Date of Portfolio
+    data = price_df.loc[date] # Data for First Date
 
     # Update Stock positions
     for ticker in ticks:
@@ -48,11 +71,14 @@ def initialize_portfolio(df: pd.DataFrame, allocation: str, ticks: list) -> pd.D
     portfolio = pd.DataFrame(portfolio_data)
 
     portfolio['Date'] = pd.to_datetime(portfolio['Date']) # Convert 'Date' column to datetime dtype
-    portfolio.set_index('Date', inplace=True) # Set 'Date' column as index
+    portfolio.set_index(['Date', 'Ticker'], inplace=True) # Set 'Date' and 'Ticker' column as index
 
     return portfolio
 
-def update_portfolio(portfolio: pd.DataFrame, price_df: pd.DataFrame, ticks: list, date) -> pd.DataFrame:
+def update_portfolio(portfolio: pd.DataFrame,
+                     price_df: pd.DataFrame,
+                     ticks: list,
+                     date) -> pd.DataFrame:
     """ Add a row for the CASH position in the Portfolio on the latest date
 
     Args:
@@ -62,32 +88,45 @@ def update_portfolio(portfolio: pd.DataFrame, price_df: pd.DataFrame, ticks: lis
         pd.DataFrame: Dataframe of Portfolio
     """
     for ticker in ticks:
-        new_price = price_df.loc[('Adj Close', ticker)]
-        print(f"New Price is {new_price}")
-        prev_quantity = portfolio[portfolio["Ticker"] == ticker]["Quantity"].iloc[0]
-        print(f"Prev Quantity: {prev_quantity}")
+        new_price = price_df.loc[date, ('Adj Close', ticker)]
+        print("NEW PRICE RETRIEVED", new_price)
+        prev_quantity = portfolio.loc[(date - timedelta(days=1), ticker)]["Quantity"]
+        print("PREV QUANTITY RETRIEVED", prev_quantity)
         new_value = prev_quantity * new_price
-        print(f"New Value for {ticker} is {new_value}")
-        new_weight = portfolio[portfolio["Ticker"] == ticker]["Weight"].iloc[0]
-        new_row_data = {
-            "Date": date,
-            "Ticker": ticker, 
-            "Quantity": prev_quantity, 
-            "Price": new_price, 
-            "Total Value": new_value, 
-            "Weight": new_weight
-        }
-        portfolio.loc[len(portfolio.index)] = new_row_data
-        portfolio.rename(index={portfolio.index[-1]: date}, inplace=True) # Update Index of new row
+        #new_weight = portfolio[portfolio["Ticker"] == ticker]["Weight"].iloc[0]
+        prev_weight = portfolio.loc[(date - timedelta(days=1)), ticker]["Weight"]
+        print("OLD WEIGHT RETRIEVED", prev_weight)
+        #portfolio.loc[len(portfolio.index)] = new_row_data
+        #portfolio.rename(index={portfolio.index[-1]: date}, inplace=True) # Update Index of new row
+        portfolio.loc[(date, ticker), 'Quantity'] = prev_quantity
+        portfolio.loc[(date, ticker), 'Price'] = new_price
+        portfolio.loc[(date, ticker), 'Total Value'] = new_value
+        portfolio.loc[(date, ticker), 'Weight'] = prev_weight
     # Add CASH
     # Get the row corresponding to "CASH"
-    cash_row = portfolio[portfolio['Ticker'] == 'CASH'].iloc[-1]
-    # Append the "CASH" row to the end of the DataFrame
-    portfolio.loc[len(portfolio.index)] = cash_row
-    portfolio.rename(index={portfolio.index[-1]: date}, inplace=True)
+
+    print(portfolio)
+
+    print("UPDATE CASH")
+    #cash_row = portfolio[portfolio['Ticker'] == 'CASH'].iloc[-1]
+    #portfolio.loc[len(portfolio.index)] = cash_row
+    #portfolio.rename(index={portfolio.index[-1]: date}, inplace=True)
+
+    portfolio.loc[(date, "CASH"), 'Quantity'] = portfolio.loc[(date - timedelta(days=1), "CASH"), 'Quantity']
+    portfolio.loc[(date, "CASH"), 'Price'] = portfolio.loc[(date - timedelta(days=1), "CASH"), 'Price']
+    portfolio.loc[(date, "CASH"), 'Total Value'] = portfolio.loc[(date - timedelta(days=1), "CASH"), 'Total Value']
+    portfolio.loc[(date, "CASH"), 'Weight'] = portfolio.loc[(date - timedelta(days=1), "CASH"), 'Weight']
+    print(portfolio)
+
+    print("TRIGGER PORTFOLIO REBALANCING")
+    rebalance_portfolio(portfolio=portfolio,
+                        ticks=ticks,
+                        date=date)
+
     return portfolio
 
-def rebalance_portfolio(portfolio:pd.DataFrame, price_df: pd.DataFrame, tickers: list, date) -> pd.DataFrame:
+def rebalance_portfolio(portfolio:pd.DataFrame,
+                        ticks: list, date) -> pd.DataFrame:
     """ Rebalance the Portfolio for the most latest date 
 
     Args:
@@ -99,32 +138,20 @@ def rebalance_portfolio(portfolio:pd.DataFrame, price_df: pd.DataFrame, tickers:
     Returns:
         pd.DataFrame: Rebalanced Portfolio
     """
-    portfolio_latest_date = portfolio.loc[date]
+    #portfolio_latest_date = portfolio.loc[date]
+    portfolio_value = portfolio.loc[date]["Total Value"].sum()
+    print(f"New Portfolio Value: {portfolio_value}")
+    amount_per_stock = portfolio_value/len(ticks)
+
+    # Update Stock positions
+    for ticker in ticks:
+        temp_df = portfolio.loc[date]
+        price = temp_df[temp_df["Ticker"] == ticker]["Price"].iloc[0]
+        quantity = math.floor(amount_per_stock / price)
+        total_value = quantity * price
+        weight = total_value / portfolio_value
+        print(f"For {ticker} the new price is {price} and quantity is {quantity}\
+               and total value is {total_value} and weight is {weight}")
+        # Update Values
 
     return None
-
-def create_portfolio(df: pd.DataFrame, allocation: str, ticks: list) -> pd.DataFrame:
-    """ Create an Equal Weighted Portfolio
-    Args:
-
-    Returns:
-        dict: Dataframe of Portfolio
-    """
-    portfolio = initialize_portfolio(df=df, allocation=allocation, ticks=ticks)
-    # Rebalance for each date after the first one
-    for date in df.index.unique()[1:]:
-        print(date)
-        data = df.loc[date]
-        prev_portfolio = portfolio.loc[portfolio.index[-1]]
-        portfolio = update_portfolio(portfolio=prev_portfolio.copy(), price_df=data, ticks=ticks, date=date)
-    return portfolio
-
-#def portfolio_value(portfolio: pd.DataFrame, price_df: pd.DataFrame) -> float:
-    """ Calculates Portfolio Value
-
-    Args:
-        portfolio (pd.DataFrame): Portfolio DataFrame
-
-    Returns:
-        float: Value of Portfolio
-    """

@@ -18,7 +18,7 @@ def main():
                                start="2016-01-04",
                                 end="2016-01-06")
     # Create Portfolio
-    portfolio = create_portfolio(df=price_df, allocation=allocation, ticks=ticks)
+    portfolio = create_portfolio(price_df=price_df, allocation=allocation, ticks=ticks)
     print(portfolio)
     return None
 
