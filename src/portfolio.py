@@ -17,7 +17,7 @@ def create_portfolio() -> pd.DataFrame:
     allocation = get_portfolio_allocation() # Integer Dollar Ammount
     df = pull_stock_data(tickers=ticks, start="2016-01-01", end="2024-01-01") # Dataframe of Prices
     amount_per_stock = allocation / len(ticks)
-    CASH = allocation
+    cash = allocation
 
     # Populate portfolio dataframe
     portfolio_data = []
@@ -28,7 +28,7 @@ def create_portfolio() -> pd.DataFrame:
         price = data.loc[('Adj Close', ticker)]
         quantity = math.floor(amount_per_stock / price)
         total_value = quantity * price
-        CASH -= total_value
+        cash -= total_value
         weight = total_value / allocation # Equal Weighted Portfolio
         portfolio_data.append({
                 "Date": date,
@@ -36,18 +36,22 @@ def create_portfolio() -> pd.DataFrame:
                 "Quantity": quantity,
                 "Price": price,
                 "Total Value": total_value,
-                "Weight": str(weight * 100) + '%'
+                "Weight": weight
             })
-    portfolio_data.append({"Date": date, 
+    # Update CASH position
+    portfolio_data.append({"Date": date,
                            "Ticker": "CASH", 
                            "Quantity": 0, 
                            "Price": 0, 
-                           "Total Value": CASH, 
-                           "Weight": CASH / allocation})
+                           "Total Value": cash, 
+                           "Weight": cash / allocation})
     portfolio = pd.DataFrame(portfolio_data)
+    
+    portfolio['Date'] = pd.to_datetime(portfolio['Date']) # Convert 'Date' column to datetime dtype
+    portfolio.set_index('Date', inplace=True) # Set 'Date' column as index
     return portfolio
 
-def update_cash_pos(portfolio: pd.DataFrame) -> pd.DataFrame:
+def update_portfolio(portfolio: pd.DataFrame) -> pd.DataFrame:
     """ Add a row for the CASH position in the Portfolio on the latest date
 
     Args:
