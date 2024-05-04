@@ -1,6 +1,6 @@
 """ Portfolio Attribution Project
 """
-from portfolio import create_portfolio
+from eq_weighted_portfolio import create_portfolio
 from user_input import get_tickers
 from user_input import get_portfolio_allocation
 from pull_data import pull_stock_data
@@ -9,11 +9,15 @@ def main():
     """
     Main Function for Portfolio Attribution Project
     """
-    ticks = get_tickers() # Tickers as a List
-    allocation = get_portfolio_allocation() # Integer Dollar Ammount
+    # Tickers as a List
+    ticks = get_tickers()
+    # Integer Dollar Ammount
+    allocation = get_portfolio_allocation()
+    # Dataframe of Prices
     price_df = pull_stock_data(tickers=ticks,
-                               start="2016-01-01",
-                                end="2024-01-01") # Dataframe of Prices
+                               start="2016-01-04",
+                                end="2016-01-06")
+    # Create Portfolio
     portfolio = create_portfolio(df=price_df, allocation=allocation, ticks=ticks)
     print(portfolio)
     return None
