@@ -116,7 +116,7 @@ def update_portfolio(portfolio: pd.DataFrame,
                 prev_date), ticker]["Weight"]
 
         new_value = prev_quantity * new_price
-   
+
         portfolio.loc[(date, ticker), 'Quantity'] = prev_quantity
         portfolio.loc[(date, ticker), 'Price'] = new_price
         portfolio.loc[(date, ticker), 'Total Value'] = new_value
@@ -174,7 +174,5 @@ def rebalance_portfolio(portfolio: pd.DataFrame,
     portfolio.loc[(date, "CASH"), 'Price'] = 1.0
     portfolio.loc[(date, "CASH"), "Total Value"] = cash
     portfolio.loc[(date, "CASH"), "Weight"] = cash / portfolio_value
-
-    #print(portfolio)
 
     return portfolio
