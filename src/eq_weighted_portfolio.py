@@ -18,7 +18,7 @@ def create_portfolio(price_df: pd.DataFrame, allocation: str, ticks: list) -> pd
     print(portfolio)
     # Rebalance for each date after the first one
     for date in price_df.index.unique()[1:]:
-        print("UPDATE PORTFOLIO")
+        #print("UPDATE PORTFOLIO")
         portfolio = update_portfolio(portfolio=portfolio.copy(),
                                      price_df=price_df,
                                      ticks=ticks,
@@ -95,27 +95,40 @@ def update_portfolio(portfolio: pd.DataFrame,
     for ticker in ticks:
         # Get new price, update dataframe and calculate new portfolio value
         new_price = price_df.loc[date, ('Adj Close', ticker)]
-        prev_quantity = portfolio.loc[(
-            date - timedelta(days=1), ticker)]["Quantity"]
+
+        prev_date = date - timedelta(days=1)
+        try:
+            prev_quantity = portfolio.loc[(
+                prev_date, ticker)]["Quantity"]
+            prev_weight = portfolio.loc[(
+                prev_date), ticker]["Weight"]
+        except KeyError:
+            #print(f"Date not found - {prev_date} must be a holiday")
+            prev_date -= timedelta(days=1)
+            #print(f"New Prev Date: {prev_date}")
+            while (prev_date, ticker) not in portfolio.index:
+                prev_date -= timedelta(days=1)
+            #print(f"Previous Date Found: {prev_date}")
+            if (prev_date, ticker) in portfolio.index:
+                prev_quantity = portfolio.loc[(
+                prev_date, ticker)]["Quantity"]
+            prev_weight = portfolio.loc[(
+                prev_date), ticker]["Weight"]
+
         new_value = prev_quantity * new_price
-        prev_weight = portfolio.loc[(
-            date - timedelta(days=1)), ticker]["Weight"]
+   
         portfolio.loc[(date, ticker), 'Quantity'] = prev_quantity
         portfolio.loc[(date, ticker), 'Price'] = new_price
         portfolio.loc[(date, ticker), 'Total Value'] = new_value
         portfolio.loc[(date, ticker), 'Weight'] = prev_weight
 
     # Update CASH in dataframe
-    portfolio.loc[(date, "CASH"), 'Quantity'] = portfolio.loc[(
-        date - timedelta(days=1), "CASH"), 'Quantity']
-    portfolio.loc[(date, "CASH"), 'Price'] = portfolio.loc[(
-        date - timedelta(days=1), "CASH"), 'Price']
-    portfolio.loc[(date, "CASH"), 'Total Value'] = portfolio.loc[(
-        date - timedelta(days=1), "CASH"), 'Total Value']
-    portfolio.loc[(date, "CASH"), 'Weight'] = portfolio.loc[(
-        date - timedelta(days=1), "CASH"), 'Weight']
+    portfolio.loc[(date, "CASH"), 'Quantity'] = portfolio.loc[(prev_date, "CASH"), 'Quantity']
+    portfolio.loc[(date, "CASH"), 'Price'] = portfolio.loc[(prev_date, "CASH"), 'Price']
+    portfolio.loc[(date, "CASH"), 'Total Value'] = portfolio.loc[(prev_date, "CASH"), 'Total Value']
+    portfolio.loc[(date, "CASH"), 'Weight'] = portfolio.loc[(prev_date, "CASH"), 'Weight']
 
-    print("TRIGGER PORTFOLIO REBALANCING")
+    #print("TRIGGER PORTFOLIO REBALANCING")
     rebalance_portfolio(portfolio=portfolio,
                         ticks=ticks,
                         date=date)
@@ -139,7 +152,7 @@ def rebalance_portfolio(portfolio: pd.DataFrame,
     """
     portfolio_value = portfolio.loc[date]["Total Value"].sum()
     cash = portfolio_value
-    print(f"Portfolio Value: {portfolio_value} on {date}")
+    #print(f"Portfolio Value: {portfolio_value} on {date}")
     amount_per_stock = portfolio_value/len(ticks)
 
     # Update Stock positions
@@ -161,5 +174,7 @@ def rebalance_portfolio(portfolio: pd.DataFrame,
     portfolio.loc[(date, "CASH"), 'Price'] = 1.0
     portfolio.loc[(date, "CASH"), "Total Value"] = cash
     portfolio.loc[(date, "CASH"), "Weight"] = cash / portfolio_value
+
+    #print(portfolio)
 
     return portfolio
