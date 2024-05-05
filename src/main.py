@@ -16,7 +16,7 @@ def main():
     # Dataframe of Prices
     price_df = pull_stock_data(tickers=ticks,
                                start="2016-01-04",
-                                end="2016-01-06")
+                                end="2016-01-10")
     # Create Portfolio
     portfolio = create_portfolio(price_df=price_df, allocation=allocation, ticks=ticks)
     print(portfolio)
