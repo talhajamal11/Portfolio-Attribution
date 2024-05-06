@@ -2,7 +2,6 @@
     Script to calculate Portfolio Metrics
 """
 import pandas as pd
-import numpy as np
 
 def portfolio_value(portfolio: pd.DataFrame) -> pd.Series:
     """ Caculate Portfolio Value at each date
