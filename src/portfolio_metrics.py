@@ -2,6 +2,7 @@
     Script to calculate Portfolio Metrics
 """
 import pandas as pd
+import numpy as np
 
 def portfolio_value(portfolio: pd.DataFrame) -> pd.Series:
     """ Caculate Portfolio Value at each date
@@ -24,3 +25,14 @@ def portfolio_returns(pf_value: pd.DataFrame) -> pd.Series:
         pd.Series: Return a Series of Portfolio Returns
     """
     return pf_value.pct_change().dropna()
+
+def portfolio_volatility(pf_ret: pd.DataFrame) -> pd.Series:
+    """ Calculate Volatiltiy of Portfolio Returns
+
+    Args:
+        pf_ret (pd.DataFrame): Series of Portfolio Returns
+
+    Returns:
+        pd.Series: _description_
+    """
+    return pf_ret.rolling(window=2).std()

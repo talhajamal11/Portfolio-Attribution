@@ -6,6 +6,7 @@ from user_input import get_portfolio_allocation
 from pull_data import pull_stock_data
 from portfolio_metrics import portfolio_value
 from portfolio_metrics import portfolio_returns
+from portfolio_metrics import portfolio_volatility
 
 def main():
     """
@@ -33,7 +34,9 @@ def main():
     print(pf_ret)
 
     # Calculate Portfolio Volatility
-
+    pf_vol = portfolio_volatility(pf_ret=pf_ret)
+    print(pf_vol)
+    
     return None
 
 if __name__== "__main__":
