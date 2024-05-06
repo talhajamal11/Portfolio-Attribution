@@ -14,8 +14,8 @@ def create_portfolio(price_df: pd.DataFrame, allocation: str, ticks: list) -> pd
     """
     portfolio = initialize_portfolio(
         price_df=price_df, allocation=allocation, ticks=ticks)
-    print("PORTFOLIO INITIALIZED")
-    print(portfolio)
+    #print("PORTFOLIO INITIALIZED")
+    #print(portfolio)
     # Rebalance for each date after the first one
     for date in price_df.index.unique()[1:]:
         #print("UPDATE PORTFOLIO")
